@@ -32,66 +32,30 @@ void Display_config() {
   display.setFontPosTop();
 }
 
-void Tela1() {
-  display.setFont(u8g_font_unifont);
-  display.drawStr(45, 15, "Vida");
-  display.drawStr(53, 40, "de");
-  display.drawStr(35, 60, "Silicio");
-}
-void Tela2() {
-  display.setFont(u8g_font_unifont);
-  display.drawBox(0, 0, 128, 64);
-  display.setColorIndex(0);
-  display.drawStr(4, 35, "Vida de Silicio");
-  display.drawStr(5, 35, "Vida de Silicio");
-  display.drawFrame(1, 1, 126, 62);
-}
-void Tela3() {
-  display.setFont(u8g_font_helvB08);
-  display.drawStr(45, 31, "Arduino");
-  display.drawStr90(105, 15, "Display");
-  display.drawStr270(20, 55, "Eletronica");
-}
-void Tela4() {
-  display.setFont(u8g_font_robot_de_niro);
-  display.drawStr(0, 13, "Vida de Silicio");
-  display.setFont(u8g_font_helvB08);
-  display.drawStr(0, 25, "Display Grafico");
-  display.setFont(u8g_font_8x13);
-  display.drawBox(0, 31, 96, 13);
-  display.setColorIndex(0);
-  display.drawStr(0, 41, "Arduino Mega");
-  display.setFont(u8g_font_ncenB10);
-  display.setColorIndex(1);
-  display.drawStr(0, 60, "0123456789");
-}
-void Tela5() {
-  char ASCII[2] = " ";
-  int dec = 32;
-  display.setFont(u8g_font_robot_de_niro);
-  for (int linha = 10; linha < 70; linha += 10) {
-    for (int coluna = 2; coluna < 128; coluna += 8) {
-      ASCII[0] = dec;
-      display.drawStr(coluna, linha, ASCII);
-      dec ++;
-    }
-  }
-  
-}
-void Tela6() {
-  display.setFont(u8g_font_8x13);
-  display.drawLine(10, 2, 110, 2);
-  display.drawBox(20, 10, 15, 15);
-  display.drawCircle(85, 20, 15);
-  display.drawEllipse(30, 50, 10, 10);
-  display.drawDisc(90, 50, 10);
-}
-
 void setup() {
-  Serial.begin(9600); //INICIALIZA A SERIAL
-  SPI.begin();        //INICIALIZA O BARRAMENTO SPI
-  rfid.PCD_Init();    //INICIALIZA MFRC522
-  Serial.println("RFID reading UID");
+  //Iniciando Serial
+  DrawScreen(1);
+  Serial.begin(9600);//INICIALIZA A SERIAL
+  delay(1000);
+  DrawScreen(2);
+  delay(1000);
+  //Fim Serial
+
+  //Iniciando SPI
+  DrawScreen(3);
+  SPI.begin();//INICIALIZA O BARRAMENTO SPI
+  delay(1000);
+  DrawScreen(4);
+  delay(1000);
+  //Fim SPI
+
+  //Inicinando RFID
+  DrawScreen(5);
+  rfid.PCD_Init();//INICIALIZA MFRC522
+  delay(1000);
+  DrawScreen(6);
+  delay(1000);
+  //Fim RFID
 
   if ( display.getMode() == U8G_MODE_R3G3B2 )
     display.setColorIndex(20);
@@ -102,64 +66,19 @@ void setup() {
 }
 
 void loop() {
+  ReadKeyboard();
+  ReadRFID();
+}
+
+void ReadKeyboard(){
   char readKeys = customKeyboard.getKey(); //Atribui a variavel a leitura do teclado
 
   if (readKeys) { //Se alguma tecla foi pressionada
     Serial.println(readKeys); //Imprime a tecla pressionada na porta serial
   }
-  //ReadRFID();
 }
 
 void ReadRFID(){
-  //Tela 1
-  display.firstPage();
-  do {
-    Display_config();
-    Tela1();
-  }
-  while (display.nextPage());
-  delay(1000);
-  //Tela 2
-  display.firstPage();
-  do {
-    Display_config();
-    Tela2();
-  }
-  while (display.nextPage());
-  delay(1000);
-  //Tela 3
-  display.firstPage();
-  do {
-    Display_config();
-    Tela3();
-  }
-  while (display.nextPage());
-  delay(1000);
-  //Tela 4
-  display.firstPage();
-  do {
-    Display_config();
-    Tela4();
-  }
-  while (display.nextPage());
-  delay(1000);
-  //Tela 5
-  display.firstPage();
-  do {
-    Display_config();
-    Tela5();
-  }
-  while (display.nextPage());
-  delay(1000);
-  //Tela 6
-  display.firstPage();
-  do {
-    Display_config();
-    Tela6();
-  }
-  while (display.nextPage());
-  delay(1000);
-
   if(rfid.PICC_IsNewCardPresent()){
     if(rfid.PICC_ReadCardSerial()){
       Serial.print("Tag UID:");
@@ -172,4 +91,81 @@ void ReadRFID(){
       rfid.PICC_HaltA();
     }
   }
+}
+
+void InitSerial()  //Tela 1
+{
+  display.setFont(u8g_font_unifont);  
+  display.drawStr( 1, 35, "Iniciando Serial");  
+  display.drawFrame(0,0,128,64);  
+  display.drawFrame(2,2,124,60);   
+}
+
+void FinishSerial()  //Tela 2
+{
+  display.setFont(u8g_font_unifont);  
+  display.drawStr( 4, 35, "Serial Iniciado");  
+  display.drawFrame(0,0,128,64);  
+  display.drawFrame(2,2,124,60);   
+}  
+
+void InitSPI()  //Tela 3
+{
+  display.setFont(u8g_font_unifont);  
+  display.drawStr( 11, 35, "Iniciando SPI");  
+  display.drawFrame(0,0,128,64);  
+  display.drawFrame(2,2,124,60);   
+}
+
+void FinishSPI()  //Tela 4
+{
+  display.setFont(u8g_font_unifont);  
+  display.drawStr( 16, 35, "SPI Iniciado");  
+  display.drawFrame(0,0,128,64);  
+  display.drawFrame(2,2,124,60);   
+}  
+
+void InitRFID()  //Tela 5
+{
+  display.setFont(u8g_font_unifont);  
+  display.drawStr( 10, 35, "Iniciando RFID");  
+  display.drawFrame(0,0,128,64);  
+  display.drawFrame(2,2,124,60);   
+}
+
+void FinishRFID()  //Tela 6
+{
+  display.setFont(u8g_font_unifont);  
+  display.drawStr( 13, 35, "RFID Iniciado");  
+  display.drawFrame(0,0,128,64);  
+  display.drawFrame(2,2,124,60);   
+}  
+
+void DrawScreen(int page){
+  display.firstPage();
+    do {
+      Display_config();
+      switch(page) //Carrega a tela correspondente  
+      {
+        case 1:  
+          InitSerial(); //Tela 1
+          break;  
+        case 2:  
+          FinishSerial(); //Tela 2
+          break; 
+        case 3:  
+          InitSPI(); //Tela 3  
+          break;  
+        case 4:  
+          FinishSPI(); //Tela 4  
+          break; 
+        case 5:  
+          InitRFID(); //Tela 5  
+          break;  
+        case 6:  
+          FinishRFID(); //Tela 6  
+          break; 
+      }
+    }
+    while (display.nextPage());
 }
