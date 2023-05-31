@@ -1,7 +1,8 @@
-#include <SPI.h> //Inclusão Biblioteca
-#include <MFRC522.h> //Biblioteca RFID
-#include <U8glib.h>  //Biblioteca Display LCD
-#include <Keypad.h>  // Biblioteca teclado
+#include <SPI.h>      //Inclusão Biblioteca
+#include <MFRC522.h>  //Biblioteca RFID
+#include <U8glib.h>   //Biblioteca Display LCD
+#include <Keypad.h>   // Biblioteca teclado
+#include <Ethernet.h> // Biblioteca internet
 
 #define SS_PIN 23  //Pino SDA RFID
 #define RST_PIN 22 //Pino de RESET RFID
@@ -24,6 +25,12 @@ const byte PINS_LINES[LINES] = {33, 35, 37, 39};     // Pinos de conexao com as 
 const byte PINS_COLUMNS[COLUMNS] = {32, 34, 36, 38}; // Pinos de conexao com as colunas do teclado
 
 Keypad customKeyboard = Keypad(makeKeymap(MATRIX_KEYS), PINS_LINES, PINS_COLUMNS, LINES, COLUMNS); //Instancia o teclado
+
+byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED }; //Endereço MAC para Ethernet Shield
+
+char server[] = "www.google.com"; //Utilizado para verificar se tem internet
+
+EthernetClient client; //Declarado o client para Ethernet Shield
 
 void Display_config() {
   display.setFont(u8g_font_6x10);
@@ -56,6 +63,62 @@ void setup() {
   DrawScreen(6);
   delay(1000);
   //Fim RFID
+
+  //Iniciando Rede
+  DrawScreenRede("Iniciando Rede");
+
+  if (Ethernet.begin(mac) == 0) {
+    Serial.println("Falha ao configurar Ethernet usando DHCP");
+    //Verifica se o modulo de Ethernet esta conectado
+    if (Ethernet.hardwareStatus() == EthernetNoHardware) {
+      Serial.println("O modulo Ethernet Shild não foi encontrada.");
+      DrawScreenRede("Placa não conectada");
+      while (true) {
+        delay(1); //Não faz nada, e a aplicação tem que ser reiniciada conectando o modulo Ethernet
+      }
+    }
+    /*if (Ethernet.linkStatus() == LinkOFF) {
+      Serial.println("Cabo de rede desconectado.");
+      //ADD MENSAGEM NA TELA "Cabo de rede desconectado"
+    }*/
+    //Tentando configurar utilizando o endereço de IP ao invés do DHCP:
+    //Ethernet.begin(mac, ip, myDns);
+  } else {
+    Serial.print("IP atribuido pelo DHCP");
+    DrawScreenRede("IP atribuido pelo DHCP ");
+    Serial.println(Ethernet.localIP());
+
+    char IP[30];
+    String IPs = (String)Ethernet.localIP();
+    IPs.toCharArray(IP, 30);
+    DrawScreenRede(IP);
+  }
+  //Tempo de esperar para que a conexão seja realizada
+  delay(1000);
+  Serial.print("Realizando conexão...");
+  DrawScreenRede("Realizando conexão...");
+  Serial.print(server);
+  Serial.println("...");
+
+  //Testando a conexão
+  if (client.connect(server, 80)) {
+    Serial.print("Conectando em:");
+    Serial.println(client.remoteIP());
+    
+    client.println("GET /search?q=arduino HTTP/1.1");
+    client.println("Host: www.google.com");
+    client.println("Connection: close");
+    client.println();
+    Serial.println("Conexão Sucesso");
+    DrawScreenRede("Conexão Sucesso");
+  } else {
+    //Se não conseguir realizar a comunicação de teste com o google
+    Serial.println("Falha na conexão");
+    DrawScreenRede("Falha na conexão");
+    delay(2000);
+  }
+
+  DrawScreenRede("Rede Iniciado");
 
   if ( display.getMode() == U8G_MODE_R3G3B2 )
     display.setColorIndex(20);
@@ -141,6 +204,15 @@ void FinishRFID()  //Tela 6
   display.drawFrame(2,2,124,60);   
 }  
 
+void ScreenRede(String msg)  //Tela 7
+{
+  display.setFont(u8g_font_unifont);  
+  display.setPrintPos(13, 35); 
+  display.print(msg);
+  display.drawFrame(0,0,128,64);  
+  display.drawFrame(2,2,124,60);   
+}  
+
 void DrawScreen(int page){
   display.firstPage();
     do {
@@ -168,4 +240,14 @@ void DrawScreen(int page){
       }
     }
     while (display.nextPage());
+}
+
+void DrawScreenRede(String msg){
+  display.firstPage();
+  do{
+    Display_config();
+    ScreenRede(msg);
+  }
+  while(display.nextPage());
+  delay(2000);
 }
