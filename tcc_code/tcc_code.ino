@@ -66,58 +66,7 @@ void setup() {
 
   //Iniciando Rede
   DrawScreenRede("Iniciando Rede");
-
-  if (Ethernet.begin(mac) == 0) {
-    Serial.println("Falha ao configurar Ethernet usando DHCP");
-    //Verifica se o modulo de Ethernet esta conectado
-    if (Ethernet.hardwareStatus() == EthernetNoHardware) {
-      Serial.println("O modulo Ethernet Shild não foi encontrada.");
-      DrawScreenRede("Placa não conectada");
-      while (true) {
-        delay(1); //Não faz nada, e a aplicação tem que ser reiniciada conectando o modulo Ethernet
-      }
-    }
-    /*if (Ethernet.linkStatus() == LinkOFF) {
-      Serial.println("Cabo de rede desconectado.");
-      //ADD MENSAGEM NA TELA "Cabo de rede desconectado"
-    }*/
-    //Tentando configurar utilizando o endereço de IP ao invés do DHCP:
-    //Ethernet.begin(mac, ip, myDns);
-  } else {
-    Serial.print("IP atribuido pelo DHCP");
-    DrawScreenRede("IP atribuido pelo DHCP ");
-    Serial.println(Ethernet.localIP());
-
-    char IP[30];
-    String IPs = (String)Ethernet.localIP();
-    IPs.toCharArray(IP, 30);
-    DrawScreenRede(IP);
-  }
-  //Tempo de esperar para que a conexão seja realizada
-  delay(1000);
-  Serial.print("Realizando conexão...");
-  DrawScreenRede("Realizando conexão...");
-  Serial.print(server);
-  Serial.println("...");
-
-  //Testando a conexão
-  if (client.connect(server, 80)) {
-    Serial.print("Conectando em:");
-    Serial.println(client.remoteIP());
-    
-    client.println("GET /search?q=arduino HTTP/1.1");
-    client.println("Host: www.google.com");
-    client.println("Connection: close");
-    client.println();
-    Serial.println("Conexão Sucesso");
-    DrawScreenRede("Conexão Sucesso");
-  } else {
-    //Se não conseguir realizar a comunicação de teste com o google
-    Serial.println("Falha na conexão");
-    DrawScreenRede("Falha na conexão");
-    delay(2000);
-  }
-
+  ProcessInitRede();
   DrawScreenRede("Rede Iniciado");
 
   if ( display.getMode() == U8G_MODE_R3G3B2 )
@@ -126,11 +75,14 @@ void setup() {
     display.setColorIndex(1);
   else if ( display.getMode() == U8G_MODE_BW )
     display.setColorIndex(1);
+
+  DrawMessageInitial();
 }
 
 void loop() {
   ReadKeyboard();
   ReadRFID();
+  DrawOkProccess();
 }
 
 void ReadKeyboard(){
@@ -145,14 +97,41 @@ void ReadRFID(){
   if(rfid.PICC_IsNewCardPresent()){
     if(rfid.PICC_ReadCardSerial()){
       Serial.print("Tag UID:");
+      String tag = "";
       for(byte i=0; i<rfid.uid.size; i++){
         Serial.print(rfid.uid.uidByte[i] < 0x10 ? "0" : " ");
         Serial.print(rfid.uid.uidByte[i], HEX);
+        tag += rfid.uid.uidByte[i] < 0x10 ? "0" : " ";
+        tag += rfid.uid.uidByte[i], HEX;
       }
 
+      DrawtUUIDProcess(tag);
       Serial.println();
       rfid.PICC_HaltA();
+      CallAPI(tag);
+      delay(2000);
     }
+  }
+}
+
+void CallAPI(String tag){
+  char server[] = "api.net";
+  DynamicJsonDocument doc(1024);
+  JsonObject json = doc.to<JsonObject>();
+  json["rfid"] = tag;
+  json["type"] = 1;
+  json["posto"] = 9;
+
+  if(client.connect(server, 80)){
+    Serial.println(("Conected"));
+    client.println("POST /api/v1/tags HTTP/1.1");
+    client.println("HOST: api.net");
+    client.println("User-Agent: Arduino/1.0");
+    client.println("Connection: close");
+    client.println("Content-Type: application/json;");
+    client.println();
+    serializeJson(json, Serial);
+    serializeJson(json, client);
   }
 }
 
@@ -213,6 +192,79 @@ void ScreenRede(String msg)  //Tela 7
   display.drawFrame(2,2,124,60);   
 }  
 
+void DrawScreenRede(String msg){
+  display.firstPage();
+  do{
+    Display_config();
+    ScreenRede(msg);
+  }
+  while(display.nextPage());
+  delay(2000);
+}
+
+void PrintUUIDProcess(String msg)  //Tela 7
+{
+  display.setFont(u8g_font_unifont);  
+  display.setPrintPos(13, 20); 
+  display.println("Tag processada:");
+  display.setPrintPos(13, 55); 
+  display.print(msg);
+  display.drawFrame(0,0,128,64);  
+  display.drawFrame(2,2,124,60);   
+}  
+
+void DrawtUUIDProcess(String msg){
+  display.firstPage();
+  do{
+    Display_config();
+    PrintUUIDProcess(msg);
+  }
+  while(display.nextPage());
+  delay(2000);
+}
+
+void MessageInitial()  //Tela 7
+{
+  display.setFont(u8g_font_unifont);  
+  display.setPrintPos(13, 20); 
+  display.println("Sistema Iniciado");
+  display.setPrintPos(13, 55); 
+  display.print("Bem Vindo");
+  display.drawFrame(0,0,128,64);  
+  display.drawFrame(2,2,124,60);   
+}  
+
+void DrawMessageInitial(){
+  display.firstPage();
+  do{
+    Display_config();
+    MessageInitial();
+  }
+  while(display.nextPage());
+  delay(2000);
+}
+
+void OkProccess()  //Tela 7
+{
+  display.setFont(u8g_font_unifont);  
+  display.setPrintPos(13, 20); 
+  display.println("Leitor pronto:");
+  display.setPrintPos(13, 55); 
+  display.print("Aguardando tag...");
+  display.drawFrame(0,0,128,64);  
+  display.drawFrame(2,2,124,60);   
+}  
+
+void DrawOkProccess(){
+  display.firstPage();
+  do{
+    Display_config();
+    OkProccess();
+  }
+  while(display.nextPage());
+  delay(2000);
+}
+
 void DrawScreen(int page){
   display.firstPage();
     do {
@@ -242,12 +294,55 @@ void DrawScreen(int page){
     while (display.nextPage());
 }
 
-void DrawScreenRede(String msg){
-  display.firstPage();
-  do{
-    Display_config();
-    ScreenRede(msg);
+void ProcessInitRede(){
+  if (Ethernet.begin(mac) == 0) {
+    Serial.println("Falha ao configurar Ethernet usando DHCP");
+    //Verifica se o modulo de Ethernet esta conectado
+    if (Ethernet.hardwareStatus() == EthernetNoHardware) {
+      Serial.println("O modulo Ethernet Shild não foi encontrada.");
+      DrawScreenRede("Placa não conectada");
+      while (true) {
+        delay(1); //Não faz nada, e a aplicação tem que ser reiniciada conectando o modulo Ethernet
+      }
+    }
+    /*if (Ethernet.linkStatus() == LinkOFF) {
+      Serial.println("Cabo de rede desconectado.");
+      //ADD MENSAGEM NA TELA "Cabo de rede desconectado"
+    }*/
+    //Tentando configurar utilizando o endereço de IP ao invés do DHCP:
+    //Ethernet.begin(mac, ip, myDns);
+  } else {
+    Serial.print("IP atribuido pelo DHCP");
+    DrawScreenRede("IP atribuido pelo DHCP ");
+    Serial.println(Ethernet.localIP());
+
+    char IP[30];
+    String IPs = (String)Ethernet.localIP();
+    IPs.toCharArray(IP, 30);
+    DrawScreenRede(IP);
   }
-  while(display.nextPage());
-  delay(2000);
+  //Tempo de esperar para que a conexão seja realizada
+  delay(1000);
+  Serial.print("Realizando conexão...");
+  DrawScreenRede("Realizando conexão...");
+  Serial.print(server);
+  Serial.println("...");
+
+  //Testando a conexão
+  if (client.connect(server, 80)) {
+    Serial.print("Conectando em:");
+    Serial.println(client.remoteIP());
+    
+    client.println("GET /search?q=arduino HTTP/1.1");
+    client.println("Host: www.google.com");
+    client.println("Connection: close");
+    client.println();
+    Serial.println("Conexão Sucesso");
+    DrawScreenRede("Conexão Sucesso");
+  } else {
+    //Se não conseguir realizar a comunicação de teste com o google
+    Serial.println("Falha na conexão");
+    DrawScreenRede("Falha na conexão");
+    delay(2000);
+  }
 }
