@@ -4,7 +4,6 @@ module.exports = {
     await queryInterface.createTable('Tags', {
       id: {
         allowNull: false,
-        autoIncrement: true,
         primaryKey: true,
         type: Sequelize.STRING
       },

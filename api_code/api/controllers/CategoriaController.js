@@ -18,12 +18,12 @@ class CategoriaController {
   static async pegaUmCategoria(req, res) {
     const { id } = req.params
     try {
-      const umNivel = await database.Niveis.findOne({
+      const umaCategoria = await database.Categorias.findOne({
         where: {
           id: Number(id)
         }
       })
-      return res.status(200).json(umNivel)
+      return res.status(200).json(umaCategoria)
     } catch (error) {
       return res.status(500).json(error.message)
     }
@@ -33,8 +33,8 @@ class CategoriaController {
   static async criaNivel(req, res) {
     const novoNivel = req.body
     try {
-      const novoNivelCriado = await database.Niveis.create(novoNivel)
-      return res.status(200).json(novoNivelCriado)
+      const novaCategoriaCriado = await database.Categorias.create(novoNivel)
+      return res.status(200).json(novaCategoriaCriado)
     } catch (error) {
       return res.status(500).json(error.message)
     }
