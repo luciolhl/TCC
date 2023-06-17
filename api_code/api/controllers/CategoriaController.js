@@ -1,4 +1,4 @@
-// const database = require('../models')
+const database = require('../models')
 
 const Services = require('../services/Services')
 const categoriasServices = new Services('Categorias')
@@ -15,14 +15,10 @@ class CategoriaController {
   }
 
   //Busca de nivel por id
-  static async pegaUmCategoria(req, res) {
+  static async pegaUmaCategoria(req, res) {
     const { id } = req.params
     try {
-      const umaCategoria = await database.Categorias.findOne({
-        where: {
-          id: Number(id)
-        }
-      })
+      const umaCategoria = await categoriasServices.pegaPorId(id)
       return res.status(200).json(umaCategoria)
     } catch (error) {
       return res.status(500).json(error.message)

@@ -22,7 +22,10 @@ module.exports = (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: 'Categorias',
-      paranoid: true
+      paranoid: true,
+      defaultScope: {
+        where: { }
+      },
     }
   )
   return Categorias
