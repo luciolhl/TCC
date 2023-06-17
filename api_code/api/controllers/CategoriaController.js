@@ -4,11 +4,11 @@ const Services = require('../services/Services')
 const categoriasServices = new Services('Categorias')
 
 class CategoriaController {
-  //Busca de todos os niveis
+  //Busca de todos os Categorias
   static async pegaTodosOscategorias(req, res) {
     try {
-      const todosOsNiveis = await categoriasServices.pegaTodosOsRegistros()
-      return res.status(200).json(todosOsNiveis)
+      const todosOsCategorias = await categoriasServices.pegaTodosOsRegistros()
+      return res.status(200).json(todosOsCategorias)
     } catch (error) {
       return res.status(500).json(error.message)
     }
@@ -26,23 +26,23 @@ class CategoriaController {
   }
 
   //Criação de Registro Nivel
-  static async criaNivel(req, res) {
-    const novoNivel = req.body
+  static async criaCategoria(req, res) {
+    const novaCategoria = req.body
     try {
-      const novaCategoriaCriado = await database.Categorias.create(novoNivel)
-      return res.status(200).json(novaCategoriaCriado)
+      const novaCategoriaCriada = await categoriasServices.criaRegistro(novaCategoria)
+      return res.status(200).json(novaCategoriaCriada)
     } catch (error) {
       return res.status(500).json(error.message)
     }
   }
 
   //Atualizar um registro
-  static async atualizarNivel(req, res) {
+  static async atualizarCategoria(req, res) {
     const { id } = req.params
     const novasInfos = req.body
     try {
-      await database.Niveis.update(novasInfos, { where: { id: Number(id) } })
-      const nivelAtualizado = await database.Niveis.findOne({
+      await database.Categorias.update(novasInfos, { where: { id: Number(id) } })
+      const nivelAtualizado = await database.Categorias.findOne({
         where: {
           id: Number(id)
         }
@@ -54,12 +54,23 @@ class CategoriaController {
   }
 
   //Deletar um Registro
-  static async apagaNivel(req, res) {
+  static async apagaCategoria(req, res) {
     const { id } = req.params
 
     try {
-      await database.Niveis.destroy({ where: { id: Number(id) } })
+      await database.Categorias.destroy({ where: { id: Number(id) } })
       return res.status(200).json({ mensagem: `id ${id} deletado!` })
+    } catch (error) {
+      return res.status(500).json(error.message)
+    }
+  }
+
+  static async restauraCategoria(req, res) {
+    const { id } = req.params
+
+    try {
+      await database.Categorias.restore({ where: { id: Number(id) } })
+      return res.status(200).json({ mensagem: `id ${id} restaurado!` })
     } catch (error) {
       return res.status(500).json(error.message)
     }
