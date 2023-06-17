@@ -1,9 +1,9 @@
 {
   "development": {
-    "username": "root",
-    "password": "Master123",
+    "username": "usertcc",
+    "password": "trabalhotcc",
     "database": "hospixoval",
-    "host": "127.0.0.1",
+    "host": "85.10.205.173",
     "port":"3306",
     "dialect": "mysql"
   },
