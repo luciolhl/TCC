@@ -1,7 +1,7 @@
 module.exports = {
   up: (queryInterface, Sequelize) => {
     return queryInterface.bulkInsert(
-      'categorias',
+      'Categorias',
       [
         {
           id: 1234671,
