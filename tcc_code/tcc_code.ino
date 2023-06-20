@@ -1,6 +1,5 @@
 #include <SPI.h>
 #include <MFRC522.h>
-#include <LiquidCrystal.h>
 #include <Ethernet.h>
 #include <MySQL_Connection.h>
 #include <MySQL_Cursor.h>
@@ -69,41 +68,90 @@ void ReadRFID(){
 }
 
 void CallDB(String tag){
-  
   Serial.print(F("\nTag recebida: "));
   Serial.println(tag);
 
-  char query[120];
-  char tagSave[9] = "";
+  if(RecordExists(tag) == false){
+    InsertRecord(tag);
+  }
+}
 
-  //QUERY PARA INSERIR AS INFORMAÇÕES NO BANCO
-  char INSERT_SQL[] = "INSERT INTO Tags(id,local, categoria_id, createdAt, updatedAt,deletedAt)VALUES('%s',%d,%d,NOW(),NOW(),NULL)";
+bool RecordExists(String tag){
+  // QUERY VERIFICAR SE TAG EXISTE NO BANCO DE DADOS
+  char CONSULT_SQL[] = "SELECT id, local FROM Tags where id='%s'";
+  char UPDATE_SQL[] = "UPDATE Tags set local= %d where id='%s'";
+  char query[128] = "";
+  char tagChar[10] = "";
+  bool insert;
+  row_values *row = NULL;
+  String head_count;
+  int local = 0;
 
-  tag.toCharArray(tagSave, 9);
-
-  Serial.print(F("Convert tagSave: "));
-  Serial.println(tagSave);
+  tag.toCharArray(tagChar, 10);
 
   MySQL_Cursor *cur_mem = new MySQL_Cursor(&conn); //CRIA UM PONTEIRO PARA EXECUÇÃO DAS QUERY
-  sprintf(query, INSERT_SQL, tagSave, 2, 1); //SUBSTITUI AS VARIAVEIS DO SQL       
-  cur_mem->execute(query);//EXECUTA A QUERY NO BANCO
 
-  Serial.println(F("Registro inserido"));
+  sprintf(query, CONSULT_SQL, tagChar);
+  cur_mem->execute(query);
 
-  delete cur_mem; //DELETA PONTEIRO
+  column_names *columns = cur_mem->get_columns();
 
-  delay(1000);
+  do {
+    row = cur_mem->get_next_row();
+    if (row != NULL) {
+      head_count = row->values[0];
+      local = atoi(row->values[1]);
+    }
+  } while (row != NULL);
+
+  Serial.print(F("local: "));
+  Serial.println(local);
+  if(head_count == ""){
+    Serial.println(F("Nenhum registro retornado.\n"));
+    insert = false;
+  }else{
+    Serial.println(F("Registro encontrado.\n"));
+    if(local == 4){
+      local = 1;
+    }else{
+      local = local+1;
+    }
+    sprintf(query, UPDATE_SQL, local, tagChar);
+    cur_mem->execute(query);
+    insert = true;
+  }
+
+  delete cur_mem;
+  return insert;
+}
+
+void InsertRecord(String tag){
+  char INSERT_SQL[] = "INSERT INTO Tags(id,local, categoria_id, createdAt, updatedAt,deletedAt)VALUES('%s',%d,%d,NOW(),NOW(),NULL)";//QUERY PARA INSERIR AS INFORMAÇÕES NO BANCO
+  char query[128] = "";
+  char tagChar[10] = "";
+
+  MySQL_Cursor *cur_mem = new MySQL_Cursor(&conn); //CRIA UM PONTEIRO PARA EXECUÇÃO DAS QUERY
   
+  tag.toCharArray(tagChar, 10);
+
+  sprintf(query, INSERT_SQL, tagChar, 2, 1); //SUBSTITUI AS VARIAVEIS DO SQL       
+  cur_mem->execute(query);//EXECUTA A QUERY NO BANCO
+  
+  if(cur_mem->get_rows_affected() > 0){
+    Serial.print(F("Tag: "));
+    Serial.print(tag);
+    Serial.println(F(" inserida com sucesso."));
+  }else{
+    Serial.print(F("Falha ao inserir Tag: "));
+    Serial.println(tag);
+  }
+  delete cur_mem;
 }
 
 void ProcessInitSQL(){
-  if (conn.connect(server_addr, 3306, user, password, dbName)) //REALIZA TENTATIVA DE CONEXÃO COM BANCO DE DADOS
-  {
-    delay(1000);
-    Serial.println(F("Conectou com sucesso."));
-  }
-  else{
+  while(!conn.connect(server_addr, 3306, user, password, dbName)){
     Serial.println(F("Falha na conexão com DB."));
+    Serial.println(F("Tentando novamente..."));
     conn.close();
-  }
+  };
 }
