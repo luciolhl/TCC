@@ -99,8 +99,10 @@ bool RecordExists(String tag){
   do {
     row = cur_mem->get_next_row();
     if (row != NULL) {
-      head_count = row->values[0];
-      local = atoi(row->values[1]);
+      head_count = atol(row->values[0]);
+      if(row->values[1] != NULL){
+        local = atoi(row->values[1]);
+      }
     }
   } while (row != NULL);
 
