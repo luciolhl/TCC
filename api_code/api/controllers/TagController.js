@@ -6,15 +6,6 @@ const tagServices = new TagsServices()
 class TagController {
   // Busca todos os Registros ativos
 
-  static async pegaTodasAsTags(req, res) {
-    try {
-      const tagsAtivas = await tagServices.pegaRegistrosAtivos()
-      return res.status(200).json(tagsAtivas)
-    }catch (error){
-      return res.status(500).json(error.message)
-    }
-  }
-
   static async pegaTodasAsPessoasAtivas(req, res) {
     try {
       const pessoasAtivas = await tagServices.pegaRegistrosAtivos()

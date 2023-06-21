@@ -4,61 +4,53 @@ module.exports = {
       'Tags',
       [
         {
-          id: 1234671,
-          categoria_id: 1,
+          id: "3EDAE529",
+          categoria_id: 1234671,
           local: 2,
           deletedAt: null,
           createdAt: new Date(),
           updatedAt: new Date()
         },
         {
-          id: 1234672,
-          categoria_id: 3,
+          id: "5249F21A",
+          categoria_id: 1234672,
           local: 2,
           deletedAt: null,
           createdAt: new Date(),
           updatedAt: new Date()
         },
         {
-          id: 1234673,
-          categoria_id: 1,
+          id: "87CE683F",
+          categoria_id: 1234673,
           local: 2,
           deletedAt: null,
           createdAt: new Date(),
           updatedAt: new Date()
         },
         {
-          id: 1234674,
-          categoria_id: 2,
+          id: "A9DEB9A2",
+          categoria_id: 1234676,
           local: 2,
           deletedAt: null,
           createdAt: new Date(),
           updatedAt: new Date()
         },
         {
-          id: 1234675,
-          categoria_id: 1,
+          id: "F24A6920",
+          categoria_id: 1234676,
           local: 2,
           deletedAt: null,
           createdAt: new Date(),
           updatedAt: new Date()
         },
         {
-          id: 1234676,
-          categoria_id: 2,
+          id: "F361 0621",
+          categoria_id: 1234676,
           local: 4,
           deletedAt: null,
           createdAt: new Date(),
           updatedAt: new Date()
-        },
-        {
-          id: 1234677,
-          categoria_id: 3,
-          local: 2,
-          deletedAt: null,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
+        }
       ],
       {}
     )

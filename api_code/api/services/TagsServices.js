@@ -7,13 +7,12 @@ class TagsService extends Services {
   }
   // métodos especificos do controlador de Tags
 
-  async pegaRegistrosAtivos(where = {}) {
-    return database[this.nomeDoModelo].findAll({ where: { ...where } })
-  }
+  // async pegaRegistrosAtivos(where = {}) {
+  //   return database[this.nomeDoModelo].sequelize.query("Select * from Tags t inner join Categorias c on t.categoria_id = c.id;");
+  // }
 
   async pegaTodosOsRegistros(where = {}) {
-    return database[this.nomeDoModelo]
-      .findAll({ where: { ...where } })
+    return database[this.nomeDoModelo].sequelize.query("Select t.id as ID, t.local as Local, c.categorias as Categoria, c.item as Item from Tags t inner join Categorias c on t.categoria_id = c.id;");
   }
 
   async cancelaTagsEMatriculas(estudanteId) {
