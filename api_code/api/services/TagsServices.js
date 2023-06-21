@@ -11,7 +11,7 @@ class TagsService extends Services {
   //   return database[this.nomeDoModelo].sequelize.query("Select * from Tags t inner join Categorias c on t.categoria_id = c.id;");
   // }
 
-  async pegaTodosOsRegistros(where = {}) {
+  async pegaTodosOsRegistros() {
     return database[this.nomeDoModelo].sequelize.query("Select t.id as ID, t.local as Local, c.categorias as Categoria, c.item as Item from Tags t inner join Categorias c on t.categoria_id = c.id;");
   }
 
