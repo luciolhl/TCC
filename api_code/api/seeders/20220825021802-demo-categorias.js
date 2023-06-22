@@ -4,7 +4,7 @@ module.exports = {
       'Categorias',
       [
         {
-          id: 1234671,
+          id: 1,
           categorias: 1,
           item: "Toalha de rosto",
           deletedAt: null,
@@ -12,7 +12,7 @@ module.exports = {
           updatedAt: new Date()
         },
         {
-          id: 1234672,
+          id: 2,
           categorias: 1,
           item: "Toalha de corpo",
           deletedAt: null,
@@ -20,7 +20,7 @@ module.exports = {
           updatedAt: new Date()
         },
         {
-          id: 1234673,
+          id: 3,
           categorias: 1,
           item: "Roupao",
           deletedAt: null,
@@ -28,7 +28,7 @@ module.exports = {
           updatedAt: new Date()
         },
         {
-          id: 1234674,
+          id: 4,
           categorias: 2,
           item: "Lençol",
           deletedAt: null,
@@ -36,7 +36,7 @@ module.exports = {
           updatedAt: new Date()
         },
         {
-          id: 1234675,
+          id: 5,
           categorias: 2,
           item: "Fronha",
           deletedAt: null,
@@ -44,7 +44,7 @@ module.exports = {
           updatedAt: new Date()
         },
         {
-          id: 1234676,
+          id: 6,
           categorias: 2,
           item: "Virol",
           deletedAt: null,

@@ -5,7 +5,7 @@ module.exports = {
       [
         {
           id: "3EDAE529",
-          categoria_id: 1234671,
+          categoria_id: 1,
           local: 2,
           deletedAt: null,
           createdAt: new Date(),
@@ -13,7 +13,7 @@ module.exports = {
         },
         {
           id: "5249F21A",
-          categoria_id: 1234672,
+          categoria_id: 2,
           local: 2,
           deletedAt: null,
           createdAt: new Date(),
@@ -21,7 +21,7 @@ module.exports = {
         },
         {
           id: "87CE683F",
-          categoria_id: 1234673,
+          categoria_id: 3,
           local: 2,
           deletedAt: null,
           createdAt: new Date(),
@@ -29,7 +29,7 @@ module.exports = {
         },
         {
           id: "A9DEB9A2",
-          categoria_id: 1234676,
+          categoria_id: 4,
           local: 2,
           deletedAt: null,
           createdAt: new Date(),
@@ -37,7 +37,7 @@ module.exports = {
         },
         {
           id: "F24A6920",
-          categoria_id: 1234676,
+          categoria_id: 5,
           local: 2,
           deletedAt: null,
           createdAt: new Date(),
@@ -45,7 +45,7 @@ module.exports = {
         },
         {
           id: "F361 0621",
-          categoria_id: 1234676,
+          categoria_id: 6,
           local: 4,
           deletedAt: null,
           createdAt: new Date(),
