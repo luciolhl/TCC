@@ -1,18 +1,20 @@
-#include <SPI.h>      //Inclusão Biblioteca
-#include <MFRC522.h>  //Biblioteca RFID
-#include <U8glib.h>   //Biblioteca Display LCD
+#include <SPI.h>
+#include <MFRC522.h>
+#include <Ethernet.h>
 #include <Keypad.h>   // Biblioteca teclado
-#include <Ethernet.h> // Biblioteca internet
-
-#define SS_PIN 23  //Pino SDA RFID
-#define RST_PIN 22 //Pino de RESET RFID
-
-U8GLIB_ST7920_128X64_1X display(8, 7, 6 , 9); //Instanciando Display LCD passando Pinos como parametro
-
-MFRC522 rfid(SS_PIN, RST_PIN); //Instanciando RFID
+#include <U8glib.h>   //Biblioteca Display LCD
+#include <MySQL_Connection.h>
+#include <MySQL_Cursor.h>
+ 
+#define SS_PIN 53
+#define RST_PIN 9
+MFRC522 mfrc522(SS_PIN, RST_PIN); //CRIA INSTANCIA DO RFID.
 
 const byte LINES = 4; // Linhas do teclado
 const byte COLUMNS = 4; // Colunas do teclado
+
+const byte PINS_LINES[LINES] = {33, 35, 37, 39};     // Pinos de conexao com as linhas do teclado
+const byte PINS_COLUMNS[COLUMNS] = {32, 34, 36, 38}; // Pinos de conexao com as colunas do teclado
 
 const char MATRIX_KEYS[LINES][COLUMNS] = {
   {'1', '2', '3', 'A'},
@@ -21,16 +23,21 @@ const char MATRIX_KEYS[LINES][COLUMNS] = {
   {'*', '0', '#', 'D'}
 };
 
-const byte PINS_LINES[LINES] = {33, 35, 37, 39};     // Pinos de conexao com as linhas do teclado
-const byte PINS_COLUMNS[COLUMNS] = {32, 34, 36, 38}; // Pinos de conexao com as colunas do teclado
-
 Keypad customKeyboard = Keypad(makeKeymap(MATRIX_KEYS), PINS_LINES, PINS_COLUMNS, LINES, COLUMNS); //Instancia o teclado
 
-byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED }; //Endereço MAC para Ethernet Shield
+U8GLIB_ST7920_128X64_1X display(6, 5, 4 , 7); //Instanciando Display LCD passando Pinos como parametro
 
-char server[] = "www.google.com"; //Utilizado para verificar se tem internet
+byte mac_addr[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED }; //DEFINE ENDEREÇO MAC DO ETHERNET
 
-EthernetClient client; //Declarado o client para Ethernet Shield
+IPAddress server_addr(85, 10, 205, 173); //IP SERVIDOR BANCO DE DADOS
+char user[] = "usertcc"; //USUÁRIO BANCO DE DADOS
+char password[] = "trabalhotcc"; //SENHA BANCO DE DADOS
+char dbName[] = "hospixoval"; //NOME BANCO DE DADOS
+
+
+EthernetClient client; //DECLARADO O CLIENT PARA ETHERNET
+
+MySQL_Connection conn((Client *)&client); //OBJETO CONEXÃO COM BANCO
 
 void Display_config() {
   display.setFont(u8g_font_6x10);
@@ -38,179 +45,248 @@ void Display_config() {
   display.setDefaultForegroundColor();
   display.setFontPosTop();
 }
+ 
+void setup() 
+{
+  DrawScreenMsg("Serial iniciando...", "");
+  Serial.begin(9600); //INICIA SERIAL
+  while (!Serial); //AGUAR INICIAR A PORTA SERIAL
+  DrawScreenMsg("Serial iniciado", "");
 
-void setup() {
-  //Iniciando Serial
-  DrawScreen(1);
-  Serial.begin(9600);//INICIALIZA A SERIAL
-  delay(1000);
-  DrawScreen(2);
-  delay(1000);
-  //Fim Serial
+  DrawScreenMsg("SPI iniciando...", "");
+  SPI.begin(); //Inicia  SPI bus
+  DrawScreenMsg("SPI iniciado", "");
 
-  //Iniciando SPI
-  DrawScreen(3);
-  SPI.begin();//INICIALIZA O BARRAMENTO SPI
-  delay(1000);
-  DrawScreen(4);
-  delay(1000);
-  //Fim SPI
+  DrawScreenMsg("RFID iniciando...", "");
+  mfrc522.PCD_Init(); //INICIA MFRC522
+  DrawScreenMsg("RFID iniciado", "");
 
-  //Inicinando RFID
-  DrawScreen(5);
-  rfid.PCD_Init();//INICIALIZA MFRC522
-  delay(1000);
-  DrawScreen(6);
-  delay(1000);
-  //Fim RFID
+  DrawScreenMsg("Rede iniciando...", "");
+  Ethernet.begin(mac_addr); //INICIA MODULO ETHERNET
+  DrawScreenMsg("Rede iniciado", IpAdressString(Ethernet.localIP()));
+  Serial.println(Ethernet.localIP()); //VERIFICA O IP RECEBIDO
 
-  //Iniciando Rede
-  DrawScreenRede("Iniciando Rede");
-  ProcessInitRede();
-  DrawScreenRede("Rede Iniciado");
-
-  if ( display.getMode() == U8G_MODE_R3G3B2 )
-    display.setColorIndex(20);
-  else if ( display.getMode() == U8G_MODE_GRAY2BIT )
-    display.setColorIndex(1);
-  else if ( display.getMode() == U8G_MODE_BW )
-    display.setColorIndex(1);
+  DrawScreenMsg("SQL iniciando...", "");
+  Serial.println(F("\nConectando SQL..."));
+  ProcessInitSQL(); //INICIAR CONEXÃO COM BANCO
+  DrawScreenMsg("SQL Iniciado", "");
+  
+  Serial.println(F("\nAproxime o seu cartao do leitor...\n"));
 
   DrawMessageInitial();
 }
-
-void loop() {
-  ReadKeyboard();
-  ReadRFID();
+ 
+void loop() 
+{
   DrawOkProccess();
+  //ReadKeyboard();
+  ReadRFID();
 }
 
-void ReadKeyboard(){
+char ReadKeyboard(){
   char readKeys = customKeyboard.getKey(); //Atribui a variavel a leitura do teclado
 
   if (readKeys) { //Se alguma tecla foi pressionada
     Serial.println(readKeys); //Imprime a tecla pressionada na porta serial
+    return readKeys;
   }
 }
 
 void ReadRFID(){
-  if(rfid.PICC_IsNewCardPresent()){
-    if(rfid.PICC_ReadCardSerial()){
-      Serial.print("Tag UID:");
-      String tag = "";
-      for(byte i=0; i<rfid.uid.size; i++){
-        Serial.print(rfid.uid.uidByte[i] < 0x10 ? "0" : " ");
-        Serial.print(rfid.uid.uidByte[i], HEX);
-        tag += rfid.uid.uidByte[i] < 0x10 ? "0" : " ";
-        tag += rfid.uid.uidByte[i], HEX;
-      }
+  //VERIFICA SE TEM NOVOS MAIS PARA SEREM LIDOS
+  if ( ! mfrc522.PICC_IsNewCardPresent()) 
+  {
+    return;
+  }
+  //VERIFICA SELAÇÃO DE TAG
+  if ( ! mfrc522.PICC_ReadCardSerial()) 
+  {
+    return;
+  }
 
-      DrawtUUIDProcess(tag);
-      Serial.println();
-      rfid.PICC_HaltA();
-      CallAPI(tag);
-      delay(2000);
+  Serial.print("UID da tag :");
+  String conteudo= "";
+
+  //DECODIFICA O UID DA TAG E ARMAZENA NA VARIAVEL conteudo E PRINTA NA SERIAL
+  for (byte i = 0; i < mfrc522.uid.size; i++) 
+  {
+     Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
+     Serial.print(mfrc522.uid.uidByte[i], HEX);
+     conteudo.concat(String(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : ""));
+     conteudo.concat(String(mfrc522.uid.uidByte[i], HEX));
+  }
+  conteudo.toUpperCase(); //CONVERTE O CONTEUDO LIDO PARA MAISCULO
+  PrintUUIDProcess(conteudo);
+  CallDB(conteudo); //CHAMA A FUNÇÃO DE INSERIR NO BANCO O REGISTRO
+}
+
+void CallDB(String tag){
+  Serial.print(F("\nTag recebida: "));
+  Serial.println(tag);
+
+  if(RecordExists(tag) == false){
+    InsertRecord(tag);
+  }
+}
+
+bool RecordExists(String tag){
+  // QUERY VERIFICAR SE TAG EXISTE NO BANCO DE DADOS
+  char CONSULT_SQL[] = "SELECT id, local FROM Tags where id='%s'";
+  char UPDATE_SQL[] = "UPDATE Tags set local= %d where id='%s'";
+  char query[128] = "";
+  char tagChar[10] = "";
+  bool insert;
+  row_values *row = NULL;
+  String head_count;
+  int local = 0;
+
+  tag.toCharArray(tagChar, 10);
+
+  MySQL_Cursor *cur_mem = new MySQL_Cursor(&conn); //CRIA UM PONTEIRO PARA EXECUÇÃO DAS QUERY
+
+  sprintf(query, CONSULT_SQL, tagChar);
+  cur_mem->execute(query);
+
+  column_names *columns = cur_mem->get_columns();
+
+  do {
+    row = cur_mem->get_next_row();
+    if (row != NULL) {
+      head_count = atol(row->values[0]);
+      if(row->values[1] != NULL){
+        local = atoi(row->values[1]);
+      }
+    }
+  } while (row != NULL);
+
+  Serial.print(F("local: "));
+  Serial.println(local);
+  if(head_count == ""){
+    DrawScreenMsg("Tag: "+ tag, "Nao cadastrada");
+    Serial.println(F("Nenhum registro retornado.\n"));
+    insert = false;
+  }else{
+    DrawScreenTagFound("Tag encontrada:", tag, "Local: " + (String)local);
+    Serial.println(F("Registro encontrado.\n"));
+    if(local == 4){
+      local = 1;
+    }else{
+      local = local+1;
+    }
+    sprintf(query, UPDATE_SQL, local, tagChar);
+    cur_mem->execute(query);
+    insert = true;
+  }
+
+  delete cur_mem;
+  return insert;
+}
+
+void InsertRecord(String tag){
+  char INSERT_SQL[] = "INSERT INTO Tags(id,local, categoria_id, createdAt, updatedAt,deletedAt)VALUES('%s',%d,%d,NOW(),NOW(),NULL)";//QUERY PARA INSERIR AS INFORMAÇÕES NO BANCO
+  char query[128] = "";
+  char tagChar[10] = "";
+  bool stopWhile = false;
+  int category;
+  String categoryString;
+
+  DrawScreenRegisterTag("Informe categoria:", "", "C para confirmar");
+  Serial.println(F("Seleciona qual categoria é esta TAG. Aperte C para confirmar."));
+  Serial.print(F("Categoria selecionada: "));
+  while(stopWhile == false){
+    char character = customKeyboard.getKey();
+    if(character){
+      if(character == 'C'){
+        DrawScreenRegisterTag("Categoria:", categoryString, "Confirmada");
+        stopWhile = true;
+      }else{
+        //category = ConvertCharToInt(character);
+        categoryString.concat(character);
+        Serial.println(categoryString);
+        DrawScreenRegisterTag("Informe categoria:", categoryString, "C para confirmar");
+      }
     }
   }
-}
 
-void CallAPI(String tag){
-  char server[] = "api.net";
-  DynamicJsonDocument doc(1024);
-  JsonObject json = doc.to<JsonObject>();
-  json["rfid"] = tag;
-  json["type"] = 1;
-  json["posto"] = 9;
+  MySQL_Cursor *cur_mem = new MySQL_Cursor(&conn); //CRIA UM PONTEIRO PARA EXECUÇÃO DAS QUERY
+  
+  tag.toCharArray(tagChar, 10);
 
-  if(client.connect(server, 80)){
-    Serial.println(("Conected"));
-    client.println("POST /api/v1/tags HTTP/1.1");
-    client.println("HOST: api.net");
-    client.println("User-Agent: Arduino/1.0");
-    client.println("Connection: close");
-    client.println("Content-Type: application/json;");
-    client.println();
-    serializeJson(json, Serial);
-    serializeJson(json, client);
+  sprintf(query, INSERT_SQL, tagChar, 2, ConvertStringToInt(categoryString)); //SUBSTITUI AS VARIAVEIS DO SQL       
+  cur_mem->execute(query);//EXECUTA A QUERY NO BANCO
+  
+  if(cur_mem->get_rows_affected() > 0){
+    Serial.print(F("Tag: "));
+    Serial.print(tag);
+    Serial.println(F(" inserida com sucesso."));
+    DrawScreenMsg("Tag: "+ tag, "Cadastrada");
+  }else{
+    Serial.print(F("Falha ao inserir Tag: "));
+    Serial.println(tag);
+    DrawScreenMsg("Tag: "+ tag, "Falha cadastro");
   }
+  delete cur_mem;
 }
 
-void InitSerial()  //Tela 1
-{
-  display.setFont(u8g_font_unifont);  
-  display.drawStr( 1, 35, "Iniciando Serial");  
-  display.drawFrame(0,0,128,64);  
-  display.drawFrame(2,2,124,60);   
+int ConvertStringToInt(String str) {
+  int i, x;
+  int tam = str.length() - 1;
+  int numero = 0;
+
+  for(i = tam; i >= 0; i--) {
+    x = (int) str.charAt(i) - 48;
+    numero = x;
+  }
+
+  return numero; 
 }
 
-void FinishSerial()  //Tela 2
-{
-  display.setFont(u8g_font_unifont);  
-  display.drawStr( 4, 35, "Serial Iniciado");  
-  display.drawFrame(0,0,128,64);  
-  display.drawFrame(2,2,124,60);   
-}  
-
-void InitSPI()  //Tela 3
-{
-  display.setFont(u8g_font_unifont);  
-  display.drawStr( 11, 35, "Iniciando SPI");  
-  display.drawFrame(0,0,128,64);  
-  display.drawFrame(2,2,124,60);   
+void ProcessInitSQL(){
+  while(!conn.connect(server_addr, 3306, user, password, dbName)){
+    Serial.println(F("Falha na conexão com DB."));
+    Serial.println(F("Tentando novamente..."));
+    conn.close();
+  };
 }
 
-void FinishSPI()  //Tela 4
+String IpAdressString(IPAddress address)
 {
-  display.setFont(u8g_font_unifont);  
-  display.drawStr( 16, 35, "SPI Iniciado");  
-  display.drawFrame(0,0,128,64);  
-  display.drawFrame(2,2,124,60);   
-}  
-
-void InitRFID()  //Tela 5
-{
-  display.setFont(u8g_font_unifont);  
-  display.drawStr( 10, 35, "Iniciando RFID");  
-  display.drawFrame(0,0,128,64);  
-  display.drawFrame(2,2,124,60);   
+ return String(address[0]) + "." + 
+        String(address[1]) + "." + 
+        String(address[2]) + "." + 
+        String(address[3]);
 }
 
-void FinishRFID()  //Tela 6
+void AllMsg(String msg, String msg2)  //Tela 1
 {
-  display.setFont(u8g_font_unifont);  
-  display.drawStr( 13, 35, "RFID Iniciado");  
+  display.setFont(u8g_font_fur11);  
+  display.setPrintPos(8, 27); 
+  display.println(msg);
+  display.setPrintPos(8, 45); 
+  display.print(msg2);
   display.drawFrame(0,0,128,64);  
-  display.drawFrame(2,2,124,60);   
+  display.drawFrame(2,2,124,60); 
 }  
 
-void ScreenRede(String msg)  //Tela 7
-{
-  display.setFont(u8g_font_unifont);  
-  display.setPrintPos(13, 35); 
-  display.print(msg);
-  display.drawFrame(0,0,128,64);  
-  display.drawFrame(2,2,124,60);   
-}  
-
-void DrawScreenRede(String msg){
+void DrawScreenMsg(String msg, String msg2){
   display.firstPage();
   do{
     Display_config();
-    ScreenRede(msg);
+    AllMsg(msg, msg2);
   }
   while(display.nextPage());
   delay(2000);
 }
 
-void PrintUUIDProcess(String msg)  //Tela 7
+void PrintUUIDProcess(String msg)  //Tela 2
 {
-  display.setFont(u8g_font_unifont);  
-  display.setPrintPos(13, 20); 
-  display.println("Tag processada:");
-  display.setPrintPos(13, 55); 
+  display.setFont(u8g_font_fur11);  
+  display.setPrintPos(8, 27); 
+  display.println("Tag informada:");
+  display.setPrintPos(8, 45); 
   display.print(msg);
   display.drawFrame(0,0,128,64);  
-  display.drawFrame(2,2,124,60);   
+  display.drawFrame(2,2,124,60); 
 }  
 
 void DrawtUUIDProcess(String msg){
@@ -223,12 +299,12 @@ void DrawtUUIDProcess(String msg){
   delay(2000);
 }
 
-void MessageInitial()  //Tela 7
+void MessageInitial()  //Tela 3
 {
-  display.setFont(u8g_font_unifont);  
-  display.setPrintPos(13, 20); 
+  display.setFont(u8g_font_fur11);  
+  display.setPrintPos(8, 27); 
   display.println("Sistema Iniciado");
-  display.setPrintPos(13, 55); 
+  display.setPrintPos(28, 42); 
   display.print("Bem Vindo");
   display.drawFrame(0,0,128,64);  
   display.drawFrame(2,2,124,60);   
@@ -244,15 +320,15 @@ void DrawMessageInitial(){
   delay(2000);
 }
 
-void OkProccess()  //Tela 7
+void OkProccess()  //Tela 4
 {
-  display.setFont(u8g_font_unifont);  
-  display.setPrintPos(13, 20); 
+  display.setFont(u8g_font_fur11);  
+  display.setPrintPos(8, 27); 
   display.println("Leitor pronto:");
-  display.setPrintPos(13, 55); 
-  display.print("Aguardando tag...");
+  display.setPrintPos(8, 45); 
+  display.print("Aguardando tag");
   display.drawFrame(0,0,128,64);  
-  display.drawFrame(2,2,124,60);   
+  display.drawFrame(2,2,124,60);     
 }  
 
 void DrawOkProccess(){
@@ -262,87 +338,50 @@ void DrawOkProccess(){
     OkProccess();
   }
   while(display.nextPage());
+}
+
+void TagFound(String msg, String tag, String local)  //Tela 5
+{
+  display.setFont(u8g_font_fur11r);  
+  display.setPrintPos(8, 15); 
+  display.println(msg);
+  display.setPrintPos(8, 35); 
+  display.print(tag);
+  display.setPrintPos(8, 55); 
+  display.print(local);
+  display.drawFrame(0,0,128,64);  
+  display.drawFrame(2,2,124,60); 
+}  
+
+void DrawScreenTagFound(String msg, String tag, String local){
+  display.firstPage();
+  do{
+    Display_config();
+    TagFound(msg, tag, local);
+  }
+  while(display.nextPage());
   delay(2000);
 }
 
-void DrawScreen(int page){
+void RegisterTag(String msg, String msg2, String msg3)  //Tela 1
+{
+  display.setFont(u8g_font_gdr9);  
+  display.setPrintPos(8, 15); 
+  display.println(msg);
+  display.setPrintPos(8, 35); 
+  display.print(msg2);
+  display.setPrintPos(8, 55); 
+  display.print(msg3);
+  display.drawFrame(0,0,128,64);  
+  display.drawFrame(2,2,124,60); 
+}  
+
+void DrawScreenRegisterTag(String msg, String msg2, String msg3){
   display.firstPage();
-    do {
-      Display_config();
-      switch(page) //Carrega a tela correspondente  
-      {
-        case 1:  
-          InitSerial(); //Tela 1
-          break;  
-        case 2:  
-          FinishSerial(); //Tela 2
-          break; 
-        case 3:  
-          InitSPI(); //Tela 3  
-          break;  
-        case 4:  
-          FinishSPI(); //Tela 4  
-          break; 
-        case 5:  
-          InitRFID(); //Tela 5  
-          break;  
-        case 6:  
-          FinishRFID(); //Tela 6  
-          break; 
-      }
-    }
-    while (display.nextPage());
-}
-
-void ProcessInitRede(){
-  if (Ethernet.begin(mac) == 0) {
-    Serial.println("Falha ao configurar Ethernet usando DHCP");
-    //Verifica se o modulo de Ethernet esta conectado
-    if (Ethernet.hardwareStatus() == EthernetNoHardware) {
-      Serial.println("O modulo Ethernet Shild não foi encontrada.");
-      DrawScreenRede("Placa não conectada");
-      while (true) {
-        delay(1); //Não faz nada, e a aplicação tem que ser reiniciada conectando o modulo Ethernet
-      }
-    }
-    /*if (Ethernet.linkStatus() == LinkOFF) {
-      Serial.println("Cabo de rede desconectado.");
-      //ADD MENSAGEM NA TELA "Cabo de rede desconectado"
-    }*/
-    //Tentando configurar utilizando o endereço de IP ao invés do DHCP:
-    //Ethernet.begin(mac, ip, myDns);
-  } else {
-    Serial.print("IP atribuido pelo DHCP");
-    DrawScreenRede("IP atribuido pelo DHCP ");
-    Serial.println(Ethernet.localIP());
-
-    char IP[30];
-    String IPs = (String)Ethernet.localIP();
-    IPs.toCharArray(IP, 30);
-    DrawScreenRede(IP);
+  do{
+    Display_config();
+    RegisterTag(msg, msg2, msg3);
   }
-  //Tempo de esperar para que a conexão seja realizada
-  delay(1000);
-  Serial.print("Realizando conexão...");
-  DrawScreenRede("Realizando conexão...");
-  Serial.print(server);
-  Serial.println("...");
-
-  //Testando a conexão
-  if (client.connect(server, 80)) {
-    Serial.print("Conectando em:");
-    Serial.println(client.remoteIP());
-    
-    client.println("GET /search?q=arduino HTTP/1.1");
-    client.println("Host: www.google.com");
-    client.println("Connection: close");
-    client.println();
-    Serial.println("Conexão Sucesso");
-    DrawScreenRede("Conexão Sucesso");
-  } else {
-    //Se não conseguir realizar a comunicação de teste com o google
-    Serial.println("Falha na conexão");
-    DrawScreenRede("Falha na conexão");
-    delay(2000);
-  }
+  while(display.nextPage());
+  delay(2000);
 }
