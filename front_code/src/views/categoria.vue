@@ -62,7 +62,7 @@
           </v-card-title>
           <v-card-text>
             <v-row>
-              <v-text-field v-model="deleteCategoria" label="Item"></v-text-field>
+              <v-text-field v-model="deleteCategoria" label="Item ID"></v-text-field>
             </v-row>
           </v-card-text>
           <v-card-actions>
