@@ -94,7 +94,7 @@ class TagController {
     const { id } = req.params
 
     try {
-      await database.Tags.restore({ where: { id: Number(id) } })
+      await database.Tags.restore({ where: { id:(id) } })
       return res.status(200).json({ mensagem: `id ${id} restaurado!` })
     } catch (error) {
       return res.status(500).json(error.message)

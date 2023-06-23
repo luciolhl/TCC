@@ -12,7 +12,7 @@ class TagsService extends Services {
   // }
 
   async pegaTodosOsRegistros() {
-    return database[this.nomeDoModelo].sequelize.query("Select t.id as ID, t.local as Local, c.categorias as Categoria, c.item as Item from Tags t inner join Categorias c on t.categoria_id = c.id;");
+    return database[this.nomeDoModelo].sequelize.query("Select t.id as ID, t.local as Local, c.categorias as Categoria, c.item as Item from Tags t left join Categorias c on t.categoria_id = c.id where t.deletedAt is null;");
   }
 
   async cancelaTagsEMatriculas(estudanteId) {
