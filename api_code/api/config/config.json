@@ -3,7 +3,7 @@
     "username": "usertcc",
     "password": "trabalhotcc",
     "database": "hospixoval",
-    "host": "85.10.205.173",
+    "host": "hospixoval.cer0zgyunyp8.us-east-1.rds.amazonaws.com",
     "port":"3306",
     "dialect": "mysql"
   },

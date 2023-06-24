@@ -29,7 +29,7 @@ U8GLIB_ST7920_128X64_1X display(6, 5, 4 , 7); //Instanciando Display LCD passand
 
 byte mac_addr[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED }; //DEFINE ENDEREÇO MAC DO ETHERNET
 
-IPAddress server_addr(85, 10, 205, 173); //IP SERVIDOR BANCO DE DADOS
+IPAddress server_addr(34, 196, 79, 118); //IP SERVIDOR BANCO DE DADOS
 char user[] = "usertcc"; //USUÁRIO BANCO DE DADOS
 char password[] = "trabalhotcc"; //SENHA BANCO DE DADOS
 char dbName[] = "hospixoval"; //NOME BANCO DE DADOS
