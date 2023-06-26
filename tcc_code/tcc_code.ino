@@ -200,7 +200,6 @@ void InsertRecord(String tag){
         DrawScreenRegisterTag("Categoria:", categoryString, "Confirmada");
         stopWhile = true;
       }else{
-        //category = ConvertCharToInt(character);
         categoryString.concat(character);
         Serial.println(categoryString);
         DrawScreenRegisterTag("Informe categoria:", categoryString, "C para confirmar");
